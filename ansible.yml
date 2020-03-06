@@ -1,0 +1,58 @@
+---
+- hosts: weatherapphost
+  become: true
+  gather_facts: true
+  vars:
+    docker_users: 
+      - ec2-user
+    pip_install_packages:
+      - name: docker 
+    pip_package: python3-pip 
+    
+  roles: 
+   - role: geerlingguy.pip
+   - role: geerlingguy.docker
+  tasks:
+  - name: Set authorized key taken from file
+    authorized_key:
+      user: ec2-user
+      state: present
+      key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+  - name: Install extra packages
+    yum:
+      name: 
+      - git
+      - net-tools
+      - vim
+      state: present
+  - name: Clone Weatherapp application
+    git:
+      repo: https://github.com/AugustasV/weatherapp
+      clone: yes
+      force: yes
+      become: false
+      dest: /home/ec2-user/weatherapp
+      version: master
+  - name: Run docker-compose up
+    docker_service:
+      project_src: /home/ec2-user/weatherapp
+      build: yes
+    register: output
+  - debug:
+        var: output
+  - name: Inspect multiple images
+    docker_image_facts:
+      name:
+        - frontend
+        - backend
+        - weatherapp
+  - name: Curl website to check if it working
+    uri:
+      url: http://localhost:8000/
+      method: GET
+      return_content: yes
+      validate_certs: no
+    register: showvmstatus
+  - name: Return status
+    debug: var=showvmstatus
+
