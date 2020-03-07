@@ -13,7 +13,6 @@
    - role: geerlingguy.pip
    - role: geerlingguy.docker
   tasks:
-  - import_tasks: playbook.yml
   - name: Install extra packages
     apt:
       name: 
@@ -35,18 +34,19 @@
     pip:
       name: docker-compose
   - name: Run docker-compose up
-    docker_service:
+    docker_compose:
       project_src: /home/ubuntu/weatherapp
       build: yes
     register: output
   - debug:
         var: output
   - name: Inspect multiple images
-    docker_image_facts:
+    docker_image_info:
       name:
         - frontend
         - backend
         - weatherapp
+      register: result
   - name: Curl website to check if it working
     uri:
       url: http://localhost:8000/
@@ -56,3 +56,8 @@
     register: showvmstatus
   - name: Return status
     debug: var=showvmstatus
+  - name: Show public IP of website
+    ec2_instance_info:
+      network_interfaces:
+        association:
+          public_ip:
