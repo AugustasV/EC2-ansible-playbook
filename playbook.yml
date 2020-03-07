@@ -1,6 +1,6 @@
 #AWS playbook
 ---
-- hosts: localhost
+- hosts: local
   connection: local
   gather_facts: False
 
@@ -9,10 +9,12 @@
     region: eu-central-1
     image: ami-0b418580298265d5c 
     id: "web-app"
+    instance_type: t2-micro
     sec_group: "{{ id }}-sec"
-    ec2_access_key: AKIATLKSFNDFSY5KOZ4O
-    ec2_secret_key: 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
-
+    ec2_access_key: "{{ec2_access_key}}"
+    ec2_secret_key: "{{ec2_secret_key}}"
+  vars_files:
+    - group_vars/all/keys.yml
   tasks:
 
     - name: Get instances facts
@@ -47,30 +49,45 @@
         aws_secret_key: "{{ec2_secret_key}}"
         rules:
           - proto: tcp
-            from_port: 22
+            ports: 
+            - 22
+            - 8000
+            - 9000
             cidr_ip: 0.0.0.0/0
-            rule_desc: allow all on ssh port
-          - proto: tcp 
-            from_port: 9000
-            cidr_ip: 0.0.0.0/0
-            rule_desc: frontentd
-          - proto: tcp
-            from port: 8000
-            cidr_ip: 0.0.0.0/0
-            rule_desc: web
-      register: result_sec_group
-
     - name: Launch the new EC2 Instance
       ec2:
-        aws_access_key: "{{ aws_access_key }}"
-        aws_secret_key: "{{ aws_secret_key }}"
-        group: "{{ security_group }}"
+        name: "Weather app instance"
+        aws_access_key: "{{ ec2_access_key }}"
+        aws_secret_key: "{{ ec2_secret_key }}"
         instance_type: "{{ instance_type }}"
+        network:
+          assign_public_ip: true
+        security_group: "{{ sec_group }}"
         image: "{{ image }}"
-        wait: true 
+        wait: true
         region: "{{ region }}"
-        keypair: "{{ keypair }}"
-        count: "{{count}}"
-      register: ec2
+        key_name: "{{ key_name }}"
+        #count: "{{count}}"
+      register: ec2         
+    - name: Add the newly created EC2 instance(s) to the local host group (located inside the directory)
+      lineinfile: 
+          dest="./hosts" 
+          regexp={{ item.public_ip }} 
+          insertafter="[webserver]" line={{ item.public_ip }}
+      with_items: "{{ ec2.instances }}"
 
+
+    - name: Wait for SSH to come up
+      local_action: wait_for 
+                    host={{ item.public_ip }} 
+                    port=22 
+                    state=started
+      with_items: "{{ ec2.instances }}"
+
+    - name: Add tag to Instance(s)
+      local_action: ec2_tag resource={{ item.id }} region={{ region }} state=present
+      with_items: "{{ ec2.instances }}"
+      args:
+        tags:
+          Name: webserver
       tags: ['never', 'create_ec2']
