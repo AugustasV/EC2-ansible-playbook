@@ -55,7 +55,7 @@
             - 9000
             cidr_ip: 0.0.0.0/0
     - name: Launch the new EC2 Instance
-      ec2:
+      ec2_instance:
         name: "Weather app instance"
         aws_access_key: "{{ ec2_access_key }}"
         aws_secret_key: "{{ ec2_secret_key }}"
