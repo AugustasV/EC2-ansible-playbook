@@ -1,5 +1,10 @@
   # Ansible AWS EC2 dynamic inventory plugin
   # https://docs.ansible.com/ansible/2.6/plugins/inventory/aws_ec2.html
+  vars:
+    ec2_access_key: "{{ec2_access_key}}"
+    ec2_secret_key: "{{ec2_secret_key}}"
+  vars_files:
+    - group_vars/all/keys.yml
   plugin: aws_ec2
   regions:
     - eu-central-1
@@ -12,3 +17,4 @@
     # create a group per region e.g. us_east_2
     - key: placement.region
       prefix: region
+      

@@ -61,9 +61,5 @@
         key_name: "{{ key_name }}"
       register: ec2         
 
-    - name: Adding instance to hosts file so we can connect later
-      add_host:
-        name: "{{ id }}-host"
-        groups: all
-      with_items: "{{ ec2.instances }}"
+- meta: refresh_inventory
 - import_playbook: ansible.yml
