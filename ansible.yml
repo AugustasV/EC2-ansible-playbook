@@ -1,5 +1,5 @@
 ---
-- hosts: weatherapp
+- hosts: all
   gather_facts: false
   become: true
   vars:
