@@ -1,5 +1,5 @@
 ---
-- hosts: localhost
+- hosts: all
   connection: local
   gather_facts: False
   vars:
@@ -61,5 +61,5 @@
         key_name: "{{ key_name }}"
       register: ec2         
 
-- meta: refresh_inventory
+    - meta: refresh_inventory
 - import_playbook: ansible.yml
