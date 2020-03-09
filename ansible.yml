@@ -1,17 +1,12 @@
 ---
-- hosts: all
-  gather_facts: false
-  become: true
-  vars:
-    docker_users: 
-      - ubuntu
-    pip_install_packages:
-      - name: docker 
-    pip_package: python3-pip 
-    
+- hosts: aws_ec2
+ # remote_user: ubuntu
+  become_method: sudo
+  gather_facts: true
+
   roles: 
-   - role: geerlingguy.pip
    - role: geerlingguy.docker
+  become: yes
   tasks:
   - name: Install extra packages
     apt:
@@ -30,6 +25,7 @@
       force: yes
       dest: /home/ubuntu/weatherapp
       version: master
+    become_user: ubuntu
   - name: install docker pip
     pip:
       name: docker-compose
@@ -46,7 +42,6 @@
         - frontend
         - backend
         - weatherapp
-      register: result
   - name: Curl website to check if it working
     uri:
       url: http://localhost:8000/
@@ -56,8 +51,3 @@
     register: showvmstatus
   - name: Return status
     debug: var=showvmstatus
-  - name: Show public IP of website
-    ec2_instance_info:
-      network_interfaces:
-        association:
-          public_ip:
